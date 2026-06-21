@@ -1,12 +1,15 @@
 export const ERRORS = {
     
-    // auth errors
+    // authentication errors
     USER_NOT_FOUND: {status:401,message:'User not found'},
     USER_ALREADY_EXISTS:{status:409,message:'Email already exists'},
     INVALID_CREDENTIALS:{status:401,message:'Invalid email or password'},
     MISSING_FIELDS:{status:400,message:'All fields are required'},
     UNAUTHORIZED:{status:401,message:'Unauthorized, no token provided'},
     INVALID_TOKEN:{status:401,message:'Invalid or expired token'},
+
+    // authorization erros
+    FORBIDDEN:{status:403,message:'You do not have permission to perform this action'},
 
     //server errors
     INTERNAL_SERVER_ERROR:{status:500,message:"Internal server error"},

@@ -24,6 +24,7 @@ export async function register({name,email,password}){
             id:true,
             name:true,
             email:true,
+            role:true
         }
     })
     return user

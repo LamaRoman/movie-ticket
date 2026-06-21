@@ -4,8 +4,10 @@ import { authenticate } from "../middleware/auth.js";
 import { upload } from "../middleware/upload.js";
 import {handleMulterError} from '../middleware/handleMulterError.js'
 import { uploadProfilePicture } from "../controllers/user.controller.js";
+import { authorize } from "../middleware/authorize.js";
 
 const router = Router();
+
 
 router.use(authenticate)
 

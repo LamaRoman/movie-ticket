@@ -25,4 +25,5 @@ model User{
  password String
  profileImage String?
  role Role @default(USER)
+ refreshToken String?
 }

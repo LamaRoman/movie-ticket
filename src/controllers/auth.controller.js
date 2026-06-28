@@ -1,37 +1,61 @@
-import { login, register } from "../services/auth.service.js";
-import { generateAccessToken,verifyAccessToken } from "../utils/jwt.js";
+import { login, register, refresh } from "../services/auth.service.js";
+import { catchAsync } from "../utils/catchAsync.js";
+import {loginLimiter} from "../middleware/rateLimiter.js"
+const accessTokenCookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 15 * 60 * 1000
+}
 
-const cookieOptions = {
-            httpOnly:true,
-            secure:process.env.NODE_ENV === 'production',
-            sameSite:'strict',
-            maxAge: 7 *24 *60 * 60 *1000
-        }
-export async function registerUser(req, res) {
-    const { name, email,password } = req.body;
+const refreshTokenCookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000
+}
 
+export async function refreshToken(req, res, next) {
     try {
-        const user = await register({ name, email,password })
-        const accessToken= generateAccessToken(user)
-
-        // store it so it lives across requests
-        res.cookie('accessToken',accessToken,cookieOptions)
-        res.status(201).json({user})
+        const refreshToken = req.cookies.refreshToken
+        if (!refreshToken) {
+            throw new AppError("No refresh token", 401)
+        }
+        const accessToken = await refresh(refreshToken)
+        res.cookie("accessToken", accessToken, accessTokenCookieOptions)
+        res.status(200).json({ message: "Token refreshed" })
     } catch (error) {
         next(error)
     }
-
 }
 
-export async function loginUser(req, res,next) {
-    const { email, password } = req.body
+export async function registerUser(req, res, next) {
+    const { name, email, password } = req.body;
     try {
-        const user = await login({ email, password })
-        const accessToken = generateAccessToken(user)
+        const { user, accessToken, refreshToken } = await register({ name, email, password })
+        res.cookie('accessToken', accessToken, accessTokenCookieOptions)
+        res.cookie('refreshToken', refreshToken, refreshTokenCookieOptions)
+        res.status(201).json({ user })
+    } catch (error) {
+        next(error)
+    }
+}
 
-        res.cookie('accessToken',accessToken,cookieOptions)
-        res.status(200).json({user})
+export const loginUser = catchAsync(async (req, res) => {
+    const { email, password } = req.body
+    const { user, accessToken, refreshToken } = await login({ email, password })
+    res.cookie('accessToken', accessToken, accessTokenCookieOptions)
+    res.cookie('refreshToken', refreshToken, refreshTokenCookieOptions)
+    res.status(200).json({ user })
+})
 
+export async function logoutUser(req, res, next) {
+    const { id } = req.user
+    try {
+        await logout(id)
+        res.clearCookie("accessToken")
+        res.clearCookie("refreshToken")
+        res.status(200).json({ message: "Logged out successfully" })
     } catch (error) {
         next(error)
     }
